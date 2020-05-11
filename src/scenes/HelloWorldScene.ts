@@ -1,10 +1,13 @@
-import Phaser from 'phaser';
+import Phaser, { Physics } from 'phaser';
 
 export default class HelloWorldScene extends Phaser.Scene {
   private platforms?: Phaser.Physics.Arcade.StaticGroup;
   private player?: Phaser.Physics.Arcade.Sprite;
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
+  private stars?: Phaser.Physics.Arcade.Group;
 
+  private score = 0;
+  private scoreText?: Phaser.GameObjects.Text;
   constructor() {
     super('hello-world');
   }
@@ -63,6 +66,38 @@ export default class HelloWorldScene extends Phaser.Scene {
 
     this.physics.add.collider(this.player, this.platforms);
     this.cursors = this.input.keyboard.createCursorKeys();
+    this.stars = this.physics.add.group({
+      key: 'star',
+      repeat: 11,
+      setXY: { x: 12, y: 0, stepX: 70 },
+    });
+    this.stars.children.iterate((c) => {
+      const child = c as Phaser.Physics.Arcade.Image;
+      child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+    });
+    this.physics.add.collider(this.stars, this.platforms);
+    this.physics.add.overlap(
+      this.player,
+      this.stars,
+      this.handleCollectorStar,
+      undefined,
+      this
+    );
+
+    this.scoreText = this.add.text(16, 16, 'score: 0', {
+      fontSize: '32px',
+      fill: '#000',
+    });
+  }
+
+  private handleCollectorStar(
+    player: Phaser.GameObjects.GameObject,
+    s: Phaser.GameObjects.GameObject
+  ) {
+    const star = s as Phaser.Physics.Arcade.Image;
+    star.disableBody(true, true);
+    this.score += 10;
+    this.scoreText?.setText(`Score: ${this.score}`);
   }
 
   update() {
